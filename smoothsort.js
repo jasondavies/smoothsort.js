@@ -137,10 +137,11 @@
 
   // Solution for determining number of trailing zeroes of a number's binary representation.
   // Taken from http://www.0xe3.com/text/ntz/ComputingTrailingZerosHOWTO.html
-  var MultiplyDeBruijnBitPosition = [ 0,  1, 28,  2, 29, 14, 24, 3,
-                                  30, 22, 20, 15, 25, 17,  4, 8,
-                                  31, 27, 13, 23, 21, 19, 16, 7,
-                                  26, 12, 18,  6, 11,  5, 10, 9];
+  var MultiplyDeBruijnBitPosition = [
+     0,  1, 28,  2, 29, 14, 24, 3,
+    30, 22, 20, 15, 25, 17,  4, 8,
+    31, 27, 13, 23, 21, 19, 16, 7,
+    26, 12, 18,  6, 11,  5, 10, 9];
 
   function trailingzeroes(v) {
     return MultiplyDeBruijnBitPosition[(((v & -v) * 0x077CB531) >> 27) & 0x1f];
