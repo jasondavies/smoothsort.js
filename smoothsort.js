@@ -1,5 +1,5 @@
 // Based on implementation in http://en.wikipedia.org/wiki/Smoothsort
-(function() {
+(function(exports) {
   // Leonardo numbers.
   var LP = [
     1, 1, 3, 5, 9, 15, 25, 41, 67, 109, 177, 287, 465, 753, 
