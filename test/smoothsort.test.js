@@ -1,6 +1,6 @@
-var test = require("node:test");
-var assert = require("node:assert/strict");
-var smoothsort = require("../smoothsort").smoothsort;
+import assert from "node:assert/strict";
+import test from "node:test";
+import { smoothsort } from "../smoothsort.js";
 
 function ascending(a, b) {
   return a - b;

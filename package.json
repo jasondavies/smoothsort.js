@@ -1,21 +1,33 @@
 {
   "name": "smoothsort",
   "version": "0.0.2",
-  "description": "Smooth sort in JavaScript.",
+  "description": "An in-place smoothsort implementation for JavaScript.",
   "keywords": [
-    "smooth sort"
+    "smoothsort",
+    "sorting",
+    "algorithm"
   ],
+  "license": "BSD-3-Clause",
   "homepage": "https://github.com/jasondavies/smoothsort.js",
+  "bugs": {
+    "url": "https://github.com/jasondavies/smoothsort.js/issues"
+  },
   "author": {
     "name": "Jason Davies",
     "url": "https://www.jasondavies.com/"
   },
+  "type": "module",
+  "files": [
+    "smoothsort.js"
+  ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "prepublishOnly": "npm test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jasondavies/smoothsort.js.git"
   },
-  "main": "smoothsort.js"
+  "main": "./smoothsort.js",
+  "exports": "./smoothsort.js"
 }
