@@ -1,6 +1,6 @@
 {
   "name": "smoothsort",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Smooth sort in JavaScript.",
   "keywords": [
     "smooth sort"
@@ -8,14 +8,14 @@
   "homepage": "https://github.com/jasondavies/smoothsort.js",
   "author": {
     "name": "Jason Davies",
-    "url": "http://www.jasondavies.com/"
+    "url": "https://www.jasondavies.com/"
   },
   "scripts": {
     "test": "node --test"
   },
   "repository": {
     "type": "git",
-    "url": "http://github.com/jasondavies/smoothsort.js.git"
+    "url": "git+https://github.com/jasondavies/smoothsort.js.git"
   },
   "main": "smoothsort.js"
 }
