@@ -17,8 +17,9 @@
         lo = 0;
         hi = m.length - 1;
       }
-      if (hi > LP[32]) {
-        throw {error: "Maximum length exceeded for smoothsort implementation."};
+      if (hi <= lo) return;
+      if (hi - lo > LP[32]) {
+        throw new RangeError("Maximum length exceeded for smoothsort implementation.");
       }
       var head = lo,
           p = 1,

@@ -10,6 +10,9 @@
     "name": "Jason Davies",
     "url": "http://www.jasondavies.com/"
   },
+  "scripts": {
+    "test": "node --test"
+  },
   "repository": {
     "type": "git",
     "url": "http://github.com/jasondavies/smoothsort.js.git"
