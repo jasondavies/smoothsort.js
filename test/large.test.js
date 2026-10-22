@@ -26,8 +26,8 @@ function isSorted(values) {
   return true;
 }
 
-// Ranges past 7,049,156 elements need more than 32 bits of heap bitmap, and
-// past 11,405,773 shift words of the bitmap by 32 or more.
+// Ranges past 7,049,156 elements need more than 32 bits of heap bitmap, past
+// 11,405,773 shift words of the bitmap by 32, and past 18,454,929 by more.
 test("sorting arrays that need a 64-bit heap bitmap", function() {
   const sort = smoothsort().compare(ascending);
   const n1 = 7049157;
@@ -39,4 +39,9 @@ test("sorting arrays that need a 64-bit heap bitmap", function() {
   const reversed = new Float64Array(n2);
   for (let i = 0; i < n2; i++) reversed[i] = n2 - i;
   assert.ok(isSorted(sort(reversed)), `reverse, n = ${n2}`);
+
+  const n3 = 18454931;
+  const reversed2 = new Float64Array(n3);
+  for (let i = 0; i < n3; i++) reversed2[i] = n3 - i;
+  assert.ok(isSorted(sort(reversed2)), `reverse, n = ${n3}`);
 });

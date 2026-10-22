@@ -60,7 +60,7 @@ test("sorting an invalid range does not grow the array", function() {
   assert.equal(values.length, 2);
 });
 
-test("sorting a small subrange near the maximum index works", function() {
+test("sorting a small subrange at a high index works", function() {
   const maxIndex = 7049155;
   const values = [];
   values.length = maxIndex + 20;
@@ -137,6 +137,19 @@ test("ranges too long to sort throw a RangeError", function() {
   const sort = smoothsort();
   assert.throws(() => sort({ length: 1402817465 }), RangeError);
   assert.throws(() => sort({ length: 2 ** 32 - 1 }), RangeError);
+  assert.throws(() => sort({ length: 2 ** 53 + 8 }, 2 ** 53, 2 ** 53 + 2), RangeError);
+});
+
+test("the longest range allowed is accepted", function() {
+  // Reading any element throws, to stop the sort as soon as it starts.
+  const started = new Error("started");
+  const values = new Proxy({ length: 1402817464 }, {
+    get(target, key) {
+      if (key === "length") return target.length;
+      throw started;
+    }
+  });
+  assert.throws(() => smoothsort()(values), started);
 });
 
 test("the default comparator orders numbers, strings and dates", function() {
@@ -181,6 +194,30 @@ test("sorting objects with a custom comparator", function() {
   const sorted = sort(values.slice());
   assert.ok(isSorted(sorted.map((d) => d.key)));
   assert.deepEqual(sorted.map((d) => d.i).sort(ascending), values.map((d) => d.i));
+});
+
+test("a throwing comparator leaves a permutation of the elements", function() {
+  for (const n of sizes) {
+    for (let k = 0; k < 5; k++) {
+      const values = Array.from({ length: n }, (_, i) => i);
+      for (let i = n - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [values[i], values[j]] = [values[j], values[i]];
+      }
+      const limit = Math.floor(random() * 4 * n);
+      let calls = 0;
+      const sort = smoothsort().compare((a, b) => {
+        if (++calls > limit) throw new Error("compare");
+        return a - b;
+      });
+      try {
+        sort(values);
+      } catch (error) {
+        assert.equal(error.message, "compare");
+      }
+      assert.deepEqual(values.slice().sort(ascending), Array.from({ length: n }, (_, i) => i), `n = ${n}, limit = ${limit}`);
+    }
+  }
 });
 
 test("sorting typed arrays", function() {

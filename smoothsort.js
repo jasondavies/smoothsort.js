@@ -16,12 +16,21 @@ const MAX_LENGTH = LP[41] + LP[42] + 1;
 // The bitmap of heap orders, p in the Wikipedia version, needs up to 43 bits,
 // so it is held in two 32-bit words: pl (low) and ph (high).  Shift counts must
 // stay below 32, as JavaScript only uses the low five bits of a shift count.
+// While ph is 0, which it is for ranges below about 7 million elements,
+// trinkle32 uses pl alone.
+
+// Each of sift, trinkle32 and trinkle is called from as few places as possible,
+// so that V8 can inline them all into sort within its inlining budget; this is
+// 5-30% faster than calling each from where it is needed.
+
+// Elements move by swapping, so that the array is always a permutation of its
+// original elements, even if the comparator throws.
 
 export function smoothsort() {
   let compare = ascending;
 
   function sort(m, lo = 0, hi = m.length - 1) {
-    if (!Number.isInteger(lo) || !Number.isInteger(hi) || lo < 0 || hi >= m.length) {
+    if (!Number.isSafeInteger(lo) || !Number.isSafeInteger(hi) || lo < 0 || hi >= m.length) {
       throw new RangeError("Invalid range for smoothsort.");
     }
     if (hi <= lo) return m;
@@ -29,21 +38,34 @@ export function smoothsort() {
       throw new RangeError("Maximum length exceeded for smoothsort implementation.");
     }
 
+    // Insertion sort is faster for short ranges, and is also in place and
+    // adaptive.  Longer ranges would need many more comparisons when reversed.
+    if (hi - lo < 16) {
+      for (let i = lo + 1, j, x; i <= hi; i++) {
+        x = m[i];
+        for (j = i; j > lo && compare(m[j - 1], x) > 0; j--) m[j] = m[j - 1], m[j - 1] = x;
+      }
+      return m;
+    }
+
     let head = lo;
     let pl = 1;
     let ph = 0;
     let pshift = 1;
     let shift;
+    let merge;
 
-    while (head < hi) {
-      if ((pl & 3) === 3) {
-        sift(m, pshift, head);
+    for (;;) {
+      merge = (pl & 3) === 3;
+      if (head < hi && (merge || LP[pshift - 1] < hi - head)) sift(m, pshift, head);
+      else if (ph === 0) trinkle32(m, pl, pshift, head, false);
+      else trinkle(m, pl, ph, pshift, head, false);
+      if (head === hi) break;
+      if (merge) {
         pl = (pl >>> 2) | (ph << 30);
         ph >>>= 2;
         pshift += 2;
       } else {
-        if (LP[pshift - 1] >= hi - head) trinkle(m, pl, ph, pshift, head, false);
-        else sift(m, pshift, head);
         shift = pshift === 1 ? 1 : pshift - 1;
         if (shift < 32) {
           ph = (ph << shift) | (pl >>> (32 - shift));
@@ -57,7 +79,6 @@ export function smoothsort() {
       pl |= 1;
       head++;
     }
-    trinkle(m, pl, ph, pshift, head, false);
 
     while (pshift !== 1 || pl !== 1 || ph !== 0) {
       if (pshift <= 1) {
@@ -75,14 +96,57 @@ export function smoothsort() {
         pl = (pl << 2) ^ 7;
         pshift -= 2;
 
-        trinkle(m, (pl >>> 1) | (ph << 31), ph >>> 1, pshift + 1, head - LP[pshift] - 1, true);
-        trinkle(m, pl, ph, pshift, head - 1, true);
+        if (ph === 0) {
+          // The left heap, then the right, from one call site.  pl >>> 0 would
+          // be a double whenever bit 31 is set, so pl is passed unshifted.
+          for (shift = 1; shift >= 0; shift--) {
+            trinkle32(m, shift ? pl >>> 1 : pl, pshift + shift, head - 1 - shift * LP[pshift], true);
+          }
+        } else {
+          trinkle(m, (pl >>> 1) | (ph << 31), ph >>> 1, pshift + 1, head - LP[pshift] - 1, true);
+          trinkle(m, pl, ph, pshift, head - 1, true);
+        }
       }
 
       head--;
     }
 
     return m;
+  }
+
+  // As trinkle, for bitmaps that fit in pl.
+  function trinkle32(m, pl, pshift, head, trusty) {
+    const val = m[head];
+    let stepson;
+    let mstepson;
+    let rt;
+    let lf;
+    let shift;
+
+    while (pl !== 1) {
+      stepson = head - LP[pshift];
+
+      if (compare((mstepson = m[stepson]), val) <= 0) break;
+
+      if (!trusty && pshift > 1) {
+        rt = head - 1;
+        lf = head - 1 - LP[pshift - 2];
+        if (compare(m[rt], mstepson) >= 0 || compare(m[lf], mstepson) >= 0) {
+          break;
+        }
+      }
+
+      m[head] = mstepson;
+      m[stepson] = val;
+
+      head = stepson;
+      shift = trailingzeroes32(pl & ~1);
+      pl >>>= shift;
+      pshift += shift;
+      trusty = false;
+    }
+
+    if (!trusty) sift(m, pshift, head);
   }
 
   function trinkle(m, pl, ph, pshift, head, trusty) {
@@ -107,6 +171,7 @@ export function smoothsort() {
       }
 
       m[head] = mstepson;
+      m[stepson] = val;
 
       head = stepson;
       shift = trailingzeroes(pl & ~1, ph);
@@ -121,10 +186,7 @@ export function smoothsort() {
       trusty = false;
     }
 
-    if (!trusty) {
-      m[head] = val;
-      sift(m, pshift, head);
-    }
+    if (!trusty) sift(m, pshift, head);
   }
 
   function sift(m, pshift, head) {
@@ -144,15 +206,16 @@ export function smoothsort() {
 
       if (compare(mlf, mrt) >= 0) {
         m[head] = mlf;
+        m[lf] = val;
         head = lf;
         pshift--;
       } else {
         m[head] = mrt;
+        m[rt] = val;
         head = rt;
         pshift -= 2;
       }
     }
-    m[head] = val;
   }
 
   sort.compare = function(x) {
@@ -162,6 +225,10 @@ export function smoothsort() {
   };
 
   return sort;
+}
+
+function trailingzeroes32(v) {
+  return 31 - Math.clz32(v & -v);
 }
 
 // Trailing zeroes of the 64-bit value with words lo and hi, which mustn't be 0.
