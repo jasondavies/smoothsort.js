@@ -1,6 +1,6 @@
 {
   "name": "smoothsort",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "An in-place smoothsort implementation for JavaScript.",
   "keywords": [
     "smoothsort",
@@ -21,7 +21,8 @@
     "smoothsort.js"
   ],
   "scripts": {
-    "test": "node --test",
+    "benchmark": "node test/benchmark.js",
+    "test": "node test/smoothsort.test.js && node test/large.test.js",
     "prepublishOnly": "npm test"
   },
   "repository": {
@@ -29,5 +30,11 @@
     "url": "git+https://github.com/jasondavies/smoothsort.js.git"
   },
   "main": "./smoothsort.js",
-  "exports": "./smoothsort.js"
+  "exports": {
+    ".": "./smoothsort.js",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
